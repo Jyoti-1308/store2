@@ -1,0 +1,16 @@
+{
+  "name": "store2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "postgreTask8DB.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start":"node postgreTask8DB.js"
+  },
+  "keywords": ["node","built"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
