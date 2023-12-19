@@ -15,7 +15,8 @@ app.use(function (req, res, next) {
     );
     next();
 });
-var port = process.env.PORT||2410;
+
+const port = 2410;
 app.listen(port, () => console.log(`Node App listening on port ${port}!`));
 const client = new Client({
     user: "postgres",
@@ -46,15 +47,12 @@ app.get("/resetData1", function (req, res, next) {
 
 });
 app.get("/shops", function (req, res, next) {
-
     const query = "SELECT * from shops";
     console.log('in');
     client.query(query, function (err, result) {
         console.log(query);
         if (err) { res.status(400).send(err); }
-
         res.send(result);
-
     });
 });
 
@@ -70,7 +68,6 @@ app.post("/shops", function (req, res, next) {
     });
 });
 app.get("/products", function (req, res, next) {
-
     const query = "SELECT * from products";
     client.query(query, function (err, result) {
         console.log(query);
@@ -101,69 +98,73 @@ app.get("/products/:id", function (req, res, next) {
     });
 });
 app.put("/products/:id", function (req, res, next) {
-
     let body = req.body;
     let id = (+req.params.id);
     var values = [body.productname, body.category, body.description, id];
-
     console.log(values);
     const query = `update products set productname=$1, category=$2, description=$3 where productId = $4`;
     client.query(query, values, function (err, result) {
         if (err) res.status(400).send(err);
         else {
             res.send(`${result.rowCount} updation successful`);
-
         }
     });
 });
-// app.get("/purchases", function (req, res, next) {
-//     let { products, shop, sortBy } = req.query;
-//     console.log(products, shop, sortBy);
-//     const query = `SELECT * from purchases`;
-//     client.query(query, function (err, result) {
-//         console.log(query);
-//         if (err) { res.status(400).send(err); }
-//         res.send(result);
-//     });
-// });
-app.get("/purchases", function (req, res) {
-    let { products, shop, sortBy } = req.query;
-  
 
+
+app.get("/shopnames", function (req, res) {
+    const query = `SELECT shopid,name from shops`;
+    client.query(query, function (err, result) {
+        if (err) { res.status(400).send(err); }
+        res.send(result);
+    });
+});
+app.get("/prodnames", function (req, res) {
+    const query = `SELECT productid,productname from products`;
+    client.query(query, function (err, result) {
+        if (err) { res.status(400).send(err); }
+        res.send(result);
+    });
+});
+
+app.get("/purchases", function (req, res) {
+    let { product, shop, sortBy } = req.query;
+    console.log(product, shop);
     let query = "select * from purchases";
-    if (products || shop || sortBy) {
+    
+    if (product || shop) {
         query += " WHERE";
         const conditions = [];
-        if (products) {
+        if (product) {
             conditions.push(" productid = ANY($1::int[])");
         }
         if (shop) {
-            conditions.push(" shopid=$2");
+            product?conditions.push(" shopid=$2"):
+            conditions.push(" shopid=$1");
         }
-        
+
         query += conditions.join(" AND");
-        if(sortBy){
-            if(sortBy==='QtyAsc')
-            query=query+` order by quantity asc`;
-            if(sortBy==='QtyDesc')
-            query=query+` order by quantity desc`;
-            if(sortBy==='ValueAsc')
-            query=query+` order by quantity*price asc`;
-            if(sortBy==='ValueDesc')
-            query=query+` order by quantity*price desc`;
-        }
     }
-    console.log(query);
-    if (products || shop || sortBy) {
-        const params = [];
-        if (products) {
-            let products1=products.split(',').map(ele=>+ele);
+    if (sortBy) {
+        if (sortBy === 'QtyAsc')
+            query = query + ` order by quantity asc`;
+        if (sortBy === 'QtyDesc')
+            query = query + ` order by quantity desc`;
+        if (sortBy === 'ValueAsc')
+            query = query + ` order by quantity*price asc`;
+        if (sortBy === 'ValueDesc')
+            query = query + ` order by quantity*price desc`;
+    }
+    const params = [];
+    if (product || shop) {
+        if (product) {
+            let products1 = product.split(',').map(ele => +(ele[2]));
             params.push(products1);
         }
         if (shop) {
-            params.push(+shop);
+            params.push(+(shop[2]));
         }
-       
+        console.log(query,params);
         client.query(query, params, function (err, result) {
             if (err) {
                 res.status(500).send(err);
@@ -173,16 +174,15 @@ app.get("/purchases", function (req, res) {
         });
     }
     else {
-        console.log("inside else");
-        let sql ="select * from purchases";
-        client.query(sql, function (err, result) {
-            if (err) res.status(404).send(err);
-            else {
-                console.log(result);
+        client.query(query, function (err, result) {
+            if (err) {
+                res.status(500).send(err);
+            } else {
                 res.send(result);
             }
-        })
+        });
     }
+
 });
 
 app.get("/purchases/shops/:id", function (req, res, next) {
@@ -219,17 +219,3 @@ app.get("/totalPurchase/product/:prodId2", function (req, res, next) {
     });
 });
 
-app.get("/shopnames", function (req, res) {
-    const query = `SELECT shopid,name from shops`;
-    client.query(query, function (err, result) {
-        if (err) { res.status(400).send(err); }
-        res.send(result);
-    });
-});
-app.get("/prodnames", function (req, res) {
-    const query = `SELECT productid,productname from products`;
-    client.query(query, function (err, result) {
-        if (err) { res.status(400).send(err); }
-        res.send(result);
-    });
-})
